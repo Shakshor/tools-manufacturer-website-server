@@ -41,14 +41,15 @@ async function run() {
         // update user
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
-            const user = req.body; // for update doc
+            const user = req.body; // for update doc sending
             const filter = { email: email };
             const options = { upsert: true };
             const updateDoc = {
                 $set: user,
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
-            res.send(result);
+            const token = jwt.sign({ email: email }, process.env.DB_TOKEN_SECRET, { expiresIn: '24h' })
+            res.send({ result, token });
         })
 
     }
