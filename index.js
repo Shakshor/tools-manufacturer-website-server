@@ -21,6 +21,7 @@ async function run() {
         // console.log('db connected')
         const toolsCollection = client.db('tools-manufacturer').collection('tools');
         const userCollection = client.db('tools-manufacturer').collection('users');
+        const orderCollection = client.db('tools-manufacturer').collection('orders');
 
         // load the product api
         app.get('/product', async (req, res) => {
@@ -37,6 +38,26 @@ async function run() {
             const product = await toolsCollection.findOne(query);
             res.send(product);
         })
+
+        // load my orders
+        // app.get('/myOrders', async (req, res) => {
+        //     const email = req.params.email;
+        //     // console.log(req);
+        //     const query = { email: email };
+        //     const orders = await toolsCollection.find(query).toArray();
+        //     res.send(orders);
+        // })
+
+
+
+
+        // POST user orders
+        app.post('/orders', async (req, res) => {
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+            res.send(result);
+        })
+
 
         // update user
         app.put('/user/:email', async (req, res) => {
