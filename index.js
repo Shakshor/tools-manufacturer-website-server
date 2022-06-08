@@ -15,6 +15,26 @@ app.use(express.json())
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.nn2tw.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+// verify token middleware
+let verifyJWT = (req, res, next) => {
+    // console.log('abc');
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'UnAuthorized access' });
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.DB_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'forbidden access' })
+        }
+        req.decoded = decoded;
+        console.log(decoded);
+        next();
+    });
+}
+
+
+
 async function run() {
     try {
         await client.connect();
@@ -40,21 +60,48 @@ async function run() {
         })
 
         // load my orders
-        // app.get('/myOrders', async (req, res) => {
-        //     const email = req.params.email;
-        //     // console.log(req);
-        //     const query = { email: email };
-        //     const orders = await toolsCollection.find(query).toArray();
-        //     res.send(orders);
-        // })
+        app.get('/orders', verifyJWT, async (req, res) => {
+            const user = req.query.user;
+            // decoded email from verifyJWT function
+            const decodedEmail = req.decoded.email;
+            if (user === decodedEmail) {
+                const query = { user: user };
+                const orders = await orderCollection.find(query).toArray();
+                return res.send(orders);
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+
+        })
+
+        // load all users
+        app.get('/user', async (req, res) => {
+            const users = await userCollection.find().toArray();
+            res.send(users);
+        })
 
 
 
+        // POST product
+        app.post('/product', async (req, res) => {
+            const product = req.body;
+            const result = await toolsCollection.insertOne(product);
+            res.send(result);
+        })
 
         // POST user orders
         app.post('/orders', async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
+            res.send(result);
+        })
+
+        // DELETE specific order
+        app.delete('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(query);
             res.send(result);
         })
 
