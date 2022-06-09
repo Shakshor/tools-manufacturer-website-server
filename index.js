@@ -82,6 +82,58 @@ async function run() {
             res.send(users);
         })
 
+        // load or find user === admin ? true : false
+        app.get('/admin/:email', async (req, res) => {
+            const email = req.params.email;
+
+            // --- alternative process -----
+            // const query = {email: email};
+            // const user  =await userCollection.findOne(query);
+
+            const user = await userCollection.findOne({ email: email });
+            const isAdmin = user.role === 'admin';
+            res.send({ admin: isAdmin });
+        })
+
+
+        // update user role as admin
+        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            const requester = req.decoded.email;
+            const query = { email: requester };
+            // const requesterAccount = await userCollection.findOne({ email: requester })
+            const requesterAccount = await userCollection.findOne(query);
+            if (requesterAccount === 'admin') {
+                const filter = { email: email };
+                // const options = { upsert: true };
+                // options is not needed. Also do not need to insert user.
+                const updateDoc = {
+                    $set: { role: 'admin' }
+                };
+                const result = await userCollection.updateOne(filter, updateDoc);
+                return res.send(result);
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+
+        })
+
+
+
+        // update user
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body; // for update doc sending
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: user,
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            const token = jwt.sign({ email: email }, process.env.DB_TOKEN_SECRET, { expiresIn: '24h' })
+            res.send({ result, token });
+        })
 
 
         // POST product
@@ -104,35 +156,6 @@ async function run() {
             const query = { _id: ObjectId(id) };
             const result = await orderCollection.deleteOne(query);
             res.send(result);
-        })
-
-
-        // update user role as admin
-        app.put('/user/admin/:email', async (req, res) => {
-            const email = req.params.email;
-            const filter = { email: email };
-            // const options = { upsert: true };
-            // options is not needed. Also do not need to insert user.
-            const updateDoc = {
-                $set: { role: 'admin' }
-            };
-            const result = await userCollection.updateOne(filter, updateDoc);
-            res.send(result);
-        })
-
-
-        // update user
-        app.put('/user/:email', async (req, res) => {
-            const email = req.params.email;
-            const user = req.body; // for update doc sending
-            const filter = { email: email };
-            const options = { upsert: true };
-            const updateDoc = {
-                $set: user,
-            };
-            const result = await userCollection.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({ email: email }, process.env.DB_TOKEN_SECRET, { expiresIn: '24h' })
-            res.send({ result, token });
         })
 
     }
