@@ -28,7 +28,7 @@ let verifyJWT = (req, res, next) => {
             return res.status(403).send({ message: 'forbidden access' })
         }
         req.decoded = decoded;
-        console.log(decoded);
+        // console.log(decoded);
         next();
     });
 }
@@ -76,7 +76,8 @@ async function run() {
         })
 
         // load all users
-        app.get('/user', async (req, res) => {
+        app.get('/user', verifyJWT, async (req, res) => {
+            // const user = req.body;
             const users = await userCollection.find().toArray();
             res.send(users);
         })
@@ -102,6 +103,20 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await orderCollection.deleteOne(query);
+            res.send(result);
+        })
+
+
+        // update user role as admin
+        app.put('/user/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            // const options = { upsert: true };
+            // options is not needed. Also do not need to insert user.
+            const updateDoc = {
+                $set: { role: 'admin' }
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
             res.send(result);
         })
 
