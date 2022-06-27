@@ -43,6 +43,23 @@ async function run() {
         const userCollection = client.db('tools-manufacturer').collection('users');
         const orderCollection = client.db('tools-manufacturer').collection('orders');
 
+
+        // verify admin middleware 
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const query = { email: requester };
+            // const requesterAccount = await userCollection.findOne({ email: requester })
+            const requesterAccount = await userCollection.findOne(query);
+            if (requesterAccount.role === 'admin') {
+                next();
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+        }
+
+
+
         // load the product api
         app.get('/product', async (req, res) => {
             const query = {};
@@ -97,27 +114,18 @@ async function run() {
 
 
         // update user role as admin(If login user is admin,then make selected user an admin)
-        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+        app.put('/user/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.params.email;
-            const requester = req.decoded.email;
-            const query = { email: requester };
-            // const requesterAccount = await userCollection.findOne({ email: requester })
-            const requesterAccount = await userCollection.findOne(query);
-            if (requesterAccount === 'admin') {
-                const filter = { email: email };
+            const filter = { email: email };
+            // const options = { upsert: true };
+            // options is not needed. Also do not need to insert user.
+            const updateDoc = {
+                $set: { role: 'admin' }
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result);
 
-                // const options = { upsert: true };
-                // options is not needed. Also do not need to insert user.
 
-                const updateDoc = {
-                    $set: { role: 'admin' }
-                };
-                const result = await userCollection.updateOne(filter, updateDoc);
-                return res.send(result);
-            }
-            else {
-                return res.status(403).send({ message: 'forbidden access' })
-            }
 
         })
 
@@ -133,13 +141,13 @@ async function run() {
                 $set: user,
             };
             const result = await userCollection.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({ email: email }, process.env.DB_TOKEN_SECRET, { expiresIn: '24h' })
-            res.send({ result, token });
+            const newToken = jwt.sign({ email: email }, process.env.DB_TOKEN_SECRET, { expiresIn: '24d' })
+            res.send({ result, newToken });
         })
 
 
         // POST product
-        app.post('/product', async (req, res) => {
+        app.post('/product', verifyJWT, verifyAdmin, async (req, res) => {
             const product = req.body;
             const result = await toolsCollection.insertOne(product);
             res.send(result);
