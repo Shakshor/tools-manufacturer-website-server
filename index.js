@@ -2,6 +2,7 @@ const express = require('express');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
@@ -152,6 +153,26 @@ async function run() {
             const newToken = jwt.sign({ email: email }, process.env.DB_TOKEN_SECRET, { expiresIn: '24d' })
             res.send({ result, newToken });
         })
+
+
+        // paymentIntent POST api
+        app.post('/create-payment-intent', async (req, res) => {
+            // const {price} = req.body; // directly destructure  
+            //  price from body (OR) -------
+            const service = req.body;
+            const price = service.price;
+            // console.log(price);
+            const amount = price * 100; // price must be in paisa
+
+            // creating paymentIntent
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ['card']
+            });
+            res.send({ clientSecret: paymentIntent.client_secret })
+        })
+
 
 
         // POST product
