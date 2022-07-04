@@ -42,6 +42,7 @@ async function run() {
         // console.log('db connected')
         const toolsCollection = client.db('tools-manufacturer').collection('tools');
         const userCollection = client.db('tools-manufacturer').collection('users');
+        const paymentCollection = client.db('tools-manufacturer').collection('payments');
         const orderCollection = client.db('tools-manufacturer').collection('orders');
 
 
@@ -138,9 +139,7 @@ async function run() {
 
         })
 
-
-
-        // update user
+        // upsert user
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body; // for update doc sending
@@ -154,9 +153,29 @@ async function run() {
             res.send({ result, newToken });
         })
 
+        // update specific order
+        app.patch('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            const filter = { _id: ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+
+            const result = await paymentCollection.insertOne(payment);
+            const updatedOrder = await orderCollection.updateOne(filter, updatedDoc);
+            res.send(updatedOrder);
+        })
+
+
+
+
 
         // paymentIntent POST api
-        app.post('/create-payment-intent', async (req, res) => {
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
             // const {price} = req.body; // directly destructure  
             //  price from body (OR) -------
             const service = req.body;
