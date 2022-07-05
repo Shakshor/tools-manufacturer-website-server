@@ -44,6 +44,7 @@ async function run() {
         const userCollection = client.db('tools-manufacturer').collection('users');
         const paymentCollection = client.db('tools-manufacturer').collection('payments');
         const orderCollection = client.db('tools-manufacturer').collection('orders');
+        const reviewCollection = client.db('tools-manufacturer').collection('reviews');
 
 
         // verify admin middleware 
@@ -207,6 +208,17 @@ async function run() {
             const result = await orderCollection.insertOne(order);
             res.send(result);
         })
+
+        // POST review
+        app.post('/review', async (req, res) => {
+            const review = req.body;
+            console.log(review);
+            const result = await reviewCollection.insertOne(review);
+            res.send(result);
+        })
+
+
+
 
         // DELETE specific order
         app.delete('/orders/:id', async (req, res) => {
