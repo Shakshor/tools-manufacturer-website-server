@@ -5,6 +5,7 @@ const cors = require('cors');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { application } = require('express');
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -123,6 +124,17 @@ async function run() {
             res.send({ admin: isAdmin });
         })
 
+        // load all reviews
+        app.get('/review', async (req, res) => {
+            const query = {};
+            const cursor = reviewCollection.find(query);
+            const reviews = await cursor.toArray();
+            res.send(reviews);
+        })
+
+
+
+
 
         // update user role as admin(If login user is admin,then make selected user an admin)
         app.put('/user/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
@@ -221,7 +233,7 @@ async function run() {
 
 
         // DELETE specific order
-        app.delete('/orders/:id', async (req, res) => {
+        app.delete('/orders/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await orderCollection.deleteOne(query);
