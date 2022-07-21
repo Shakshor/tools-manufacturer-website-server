@@ -70,7 +70,7 @@ async function run() {
             const cursor = toolsCollection.find(query);
             const products = await cursor.toArray();
             res.send(products);
-        })
+        });
 
         // load the single product data
         app.get('/product/:id', async (req, res) => {
@@ -78,9 +78,18 @@ async function run() {
             const query = { _id: ObjectId(id) };
             const product = await toolsCollection.findOne(query);
             res.send(product);
+        });
+
+
+        // load all orders
+        app.get('/Orders/all', verifyJWT, verifyAdmin, async (req, res) => {
+            const query = {};
+            const cursor = orderCollection.find(query);
+            const allOrders = await cursor.toArray();
+            res.send(allOrders);
         })
 
-        // load my orders
+        // load specific user orders
         app.get('/orders', verifyJWT, async (req, res) => {
             const user = req.query.user;
             // decoded email from verifyJWT function
@@ -174,7 +183,8 @@ async function run() {
             const updatedDoc = {
                 $set: {
                     paid: true,
-                    transactionId: payment.transactionId
+                    transactionId: payment.transactionId,
+                    status: payment.status,
                 }
             }
 
