@@ -206,6 +206,7 @@ async function run() {
                 }
             }
             const updatedOrder = await orderCollection.updateOne(filter, updatedDoc, options);
+            const updatedPayment = await paymentCollection.updateOne(filter, updatedDoc, options);
             res.send(updatedOrder);
         })
 
