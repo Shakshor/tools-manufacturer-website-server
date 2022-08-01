@@ -82,7 +82,7 @@ async function run() {
 
 
         // load all orders
-        app.get('/Orders/all', verifyJWT, verifyAdmin, async (req, res) => {
+        app.get('/allOrders', verifyJWT, verifyAdmin, async (req, res) => {
             const query = {};
             const cursor = orderCollection.find(query);
             const allOrders = await cursor.toArray();
@@ -191,6 +191,22 @@ async function run() {
             const result = await paymentCollection.insertOne(payment);
             const updatedOrder = await orderCollection.updateOne(filter, updatedDoc);
             res.send(updatedOrder);
+        });
+
+        // update specific order from all orders
+        app.put('/allOrders/:id', async (req, res) => {
+            const id = req.params.id;
+            const updatedStatus = req.body;
+            // console.log(id, updatedStatus);
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: {
+                    status: updatedStatus.update,
+                }
+            }
+            const updatedOrder = await orderCollection.updateOne(filter, updatedDoc, options);
+            res.send(updatedOrder);
         })
 
 
@@ -234,7 +250,7 @@ async function run() {
         // POST review
         app.post('/review', async (req, res) => {
             const review = req.body;
-            console.log(review);
+            // console.log(review);
             const result = await reviewCollection.insertOne(review);
             res.send(result);
         })
@@ -248,7 +264,16 @@ async function run() {
             const query = { _id: ObjectId(id) };
             const result = await orderCollection.deleteOne(query);
             res.send(result);
-        })
+        });
+
+        // DELETE  specific product
+        app.delete('/allOrders/:id', verifyJWT, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(query);
+            res.send(result);
+        });
+
 
         // DELETE  specific product
         app.delete('/product/:id', verifyJWT, verifyAdmin, async (req, res) => {
@@ -256,7 +281,7 @@ async function run() {
             const query = { _id: ObjectId(id) };
             const result = await toolsCollection.deleteOne(query);
             res.send(result);
-        })
+        });
 
     }
     finally {
