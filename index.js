@@ -194,7 +194,7 @@ async function run() {
 
 
         // ----------- users api -------------
-        // load all users
+        // load users
         app.get('/user', verifyJWT, async (req, res) => {
             // const user = req.body;
             const users = await userCollection.find().toArray();
@@ -249,7 +249,7 @@ async function run() {
 
 
         // ----------------- review api -----------
-        // load all reviews
+        // load  reviews
         app.get('/review', async (req, res) => {
             const query = {};
             const cursor = reviewCollection.find(query);
